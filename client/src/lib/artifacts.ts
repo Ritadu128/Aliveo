@@ -28,10 +28,10 @@ export const ARTIFACTS: Artifact[] = [
     description: "A masterpiece of Hellenistic sculpture depicting Nike, the goddess of victory.",
     catalogNumber: "AR-190BC-001",
     dialogue: [
-      "I have stood here for centuries, watching history unfold before me. The winds of the Aegean still seem to rush through my wings, even now.",
-      "They carved me to celebrate a naval victory — a moment of triumph so profound that they gave it wings. Do you feel the movement in my marble folds?",
-      "I lost my head and arms long ago, yet I have never felt incomplete. Sometimes, what is absent speaks louder than what remains.",
-      "Come closer. Let me tell you about the day I was discovered, buried beneath the earth of Samothrace, waiting for someone to hear my story..."
+      "啊哈！终于有人来看我了！✨ 我是胜利女神 Nike，站在这里已经超过两千年了。你知道吗，我的翅膀展开时，整个爱琴海的风都会为我呼啸！",
+      "他们把我雕刻出来，是为了庆祝一场海战的胜利——那场胜利如此辉煌，以至于他们决定给它插上翅膀。你感受到我大理石褶皱里流动的风了吗？🌊",
+      "我的头和双臂早就不见了，但我从未觉得自己不完整。有时候，缺失的部分反而比存在的部分更能说明问题。你说呢？",
+      "1863年，人们在萨莫色雷斯岛的土地里发现了我——碎成好几块，静静等待了两千年。我一直在等一个懂得欣赏我的人。😌 也许，就是你。"
     ]
   },
   {
@@ -46,10 +46,10 @@ export const ARTIFACTS: Artifact[] = [
     description: "Rodin's iconic bronze sculpture of a man in deep contemplation.",
     catalogNumber: "AR-1904-002",
     dialogue: [
-      "Ah, a visitor. I have been sitting here, thinking, for over a century. You might wonder what occupies my mind so deeply.",
-      "Rodin imagined me as Dante, contemplating the souls in Hell below. But I have come to think about everything — life, creation, the weight of human existence.",
-      "People assume I am sad. But I am not sad — I am simply... thorough. Every thought deserves to be felt completely before moving on.",
-      "What are you thinking about right now? Perhaps we are not so different, you and I."
+      "……（沉默片刻）哦，是你啊。我一直在想事情，一想就是一百多年。🤔 你可能好奇我在想什么——说实话，我自己有时候也不太确定。",
+      "罗丹最初把我设计成但丁，俯瞰地狱里的灵魂。但后来我想啊想啊，开始思考更多的事：生命、创造、人类存在的重量……有时候还想想晚饭吃什么。",
+      "大家都以为我很悲伤。其实不是——我只是……很彻底。每一个念头都值得被完整地感受，然后再继续下一个。这是我的原则。🧠",
+      "你现在在想什么？也许我们并没有那么不同，你和我。坐下来，我们一起想想？（虽然我已经坐了一百年，但多一个伴也不错。）"
     ]
   },
   {
@@ -64,10 +64,10 @@ export const ARTIFACTS: Artifact[] = [
     description: "An ancient Greek statue believed to depict Aphrodite, goddess of love and beauty.",
     catalogNumber: "AR-100BC-003",
     dialogue: [
-      "They debate endlessly about what my missing arms once held. A mirror? An apple? A shield? I find the mystery more beautiful than any answer could be.",
-      "I am Aphrodite — or perhaps I am simply a woman, carved with such devotion that divinity seeped into the marble itself.",
-      "Two thousand years of human eyes have looked upon me. Each person sees something different. What do you see?",
-      "The island of Milos kept me hidden for centuries. Perhaps I was waiting for the right moment to return to the world."
+      "他们争论了几个世纪，说我失去的双臂原本拿着什么——镜子？苹果？盾牌？🍎 说实话，我觉得这个谜比任何答案都要美丽。",
+      "我是阿芙洛狄忒，爱与美的女神。或者，也许我只是一个普通的女人，被雕刻者倾注了如此深厚的情感，以至于神性渗入了大理石本身。✨",
+      "两千年来，无数双眼睛注视过我。每个人都看到了不同的东西。你呢？你在我身上看到了什么？",
+      "米洛斯岛把我藏了好几个世纪。也许我一直在等待一个合适的时机，重新回到这个世界。1820年，一个农民挖地时发现了我——我想，那个时机终于到了。😊"
     ]
   },
   {
@@ -82,10 +82,10 @@ export const ARTIFACTS: Artifact[] = [
     description: "Michelangelo's masterpiece depicting the biblical hero David before his battle with Goliath.",
     catalogNumber: "AR-1504-004",
     dialogue: [
-      "I was carved from a single block of marble that other sculptors had abandoned. Michelangelo saw me inside the stone before he ever touched it.",
-      "Look at my hands — they are larger than proportional. Michelangelo made them that way deliberately. The hand that would slay Goliath deserved to be monumental.",
-      "I stand here not in triumph, but in the moment before — the concentrated stillness before action. This is where true courage lives.",
-      "Five hundred years I have stood in Florence. The city has changed around me, but I remain — a reminder that even the smallest among us can face the greatest giants."
+      "我是从一块被其他雕塑家放弃的大理石中诞生的。米开朗基罗说，他只是把多余的部分去掉，把我从石头里解放出来。🗿 有时候我在想，我们每个人是不是也被困在某块石头里？",
+      "注意看我的手——它们比正常比例要大。米开朗基罗是故意这样做的。那双将要击败歌利亚的手，理应是宏伟的。细节里藏着他的心意。",
+      "我站在这里，不是在庆祝胜利，而是在胜利之前的那一刻——那种高度集中的平静，行动前的凝神。真正的勇气，就住在这里。💪",
+      "五百年了，我一直站在佛罗伦萨。城市在我周围变迁，但我依然在这里——提醒着每一个人：即使是最渺小的人，也能面对最巨大的巨人。"
     ]
   },
   {
@@ -100,10 +100,10 @@ export const ARTIFACTS: Artifact[] = [
     description: "A dramatic Hellenistic sculpture depicting the Trojan priest Laocoön and his sons being attacked by sea serpents.",
     catalogNumber: "AR-40BC-005",
     dialogue: [
-      "You see agony in my face, in every twisted muscle. But look deeper — this is not merely pain. This is the moment when a man realizes the gods themselves have turned against him.",
-      "I warned the Trojans about the wooden horse. I threw my spear at it. And for my truth-telling, Poseidon sent the serpents.",
-      "The artists who made me understood something profound: the most powerful human emotion is not joy, but the desperate struggle against fate.",
-      "Even in marble, you can feel the serpents tightening. Some stories never stop unfolding."
+      "你看到我脸上的痛苦了吗？每一块扭曲的肌肉？但请再仔细看——这不仅仅是疼痛。这是一个人意识到连神明都已经背弃他的那一刻。😔",
+      "我警告过特洛伊人，那匹木马是个陷阱。我用长矛刺向它。而作为说真话的代价，波塞冬派来了海蛇。说真话，有时候真的很危险。",
+      "雕刻我的艺术家们理解了一件深刻的事：人类最强烈的情感，不是喜悦，而是在命运面前绝望的挣扎。他们把这一切都刻进了大理石里。",
+      "即使在大理石中，你也能感受到那些蛇在收紧。有些故事，永远不会停止展开。我的故事，就是其中之一。"
     ]
   }
 ];

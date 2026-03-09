@@ -261,13 +261,26 @@
     animation: scanLine 2s linear infinite;
   }
 
-  /* Typewriter cursor blink */
-  @keyframes blink {
+  /* Typewriter cursor blink */  @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
   }
+
   .animate-blink {
     animation: blink 1s step-end infinite;
+  }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  /* Safe area padding for mobile notch/home indicator */
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   /* Hide scrollbar */
