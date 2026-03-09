@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState } from "react";
 import type { Artifact } from "@/lib/artifacts";
 
-type Page = "landing" | "camera" | "result" | "conversation";
+export type Page = "landing" | "camera" | "result" | "awaken" | "conversation";
 
 interface AppContextType {
   currentPage: Page;

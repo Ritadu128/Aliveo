@@ -1,10 +1,11 @@
-// Aliveo — Camera Page
+// Aliveo — Camera Page (PRD v2)
 // Design: Neo-Museological
-// - Full-screen camera with elegant viewfinder frame
-// - Museum-style corner brackets on viewfinder
-// - "Awaken" button with pulse ring animation
-// - Scanning line during recognition
-// - Warm overlay tones
+//
+// Changes from PRD v2:
+//   - Chinese copy: "对准展品，按下快门" / "正在识别展品…"
+//   - Richer scanning animation with pulsing corner brackets
+//   - "唤醒" button label (Chinese)
+//   - Loading state shows "正在识别展品…" per PRD
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useApp } from "@/contexts/AppContext";
@@ -32,7 +33,7 @@ export default function CameraPage() {
         videoRef.current.srcObject = stream;
       }
     } catch {
-      setCameraError("Unable to access camera. Please allow camera permission and try again.");
+      setCameraError("无法访问摄像头，请允许相机权限后重试。");
     }
   }, []);
 
@@ -64,10 +65,10 @@ export default function CameraPage() {
       }
     }
 
-    // Simulate progress
+    // Simulate 2-3s recognition per PRD
     let progress = 0;
     const interval = setInterval(() => {
-      progress += 2;
+      progress += 1.8;
       setScanProgress(progress);
       if (progress >= 100) {
         clearInterval(interval);
@@ -88,31 +89,31 @@ export default function CameraPage() {
         playsInline
         muted
         className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
-          cameraState === "scanning" ? "blur-[2px] brightness-90" : ""
+          cameraState === "scanning" ? "blur-[1.5px] brightness-85" : ""
         }`}
       />
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Dark overlay */}
-      <div className={`absolute inset-0 bg-black/20 transition-opacity duration-500 ${
-        cameraState === "scanning" ? "opacity-60" : "opacity-30"
+      <div className={`absolute inset-0 bg-black transition-opacity duration-500 ${
+        cameraState === "scanning" ? "opacity-50" : "opacity-25"
       }`} />
 
       {/* Top bar */}
-      <div className="relative z-10 flex items-center justify-between px-5 pt-safe pt-6 pb-4">
+      <div className="relative z-10 flex items-center justify-between px-5 pt-6 pb-4">
         <button
           onClick={() => setCurrentPage("landing")}
-          className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-white/90 hover:text-white transition-colors active:scale-95"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span className="font-body text-sm tracking-wide">Back</span>
+          <span className="font-body text-sm tracking-wide">返回</span>
         </button>
 
         <div className="text-center">
           <span className="font-display text-white/90 text-base font-medium">
-            SculptTalk<span className="text-[oklch(0.72_0.09_75)]">.</span>
+            Aliveo<span className="text-[oklch(0.72_0.09_75)]">.</span>
           </span>
         </div>
 
@@ -121,72 +122,83 @@ export default function CameraPage() {
 
       {/* Viewfinder frame */}
       <div className="relative z-10 flex-1 flex items-center justify-center px-8">
-        <div className="relative w-full max-w-[320px] aspect-square">
-          {/* Corner brackets — museum frame aesthetic */}
-          <div className="absolute inset-0">
-            {/* Top-left */}
-            <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/80" />
-            {/* Top-right */}
-            <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/80" />
-            {/* Bottom-left */}
-            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/80" />
-            {/* Bottom-right */}
-            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/80" />
-          </div>
+        <div className="relative w-full max-w-[300px] aspect-square">
+
+          {/* Corner brackets — animate during scanning */}
+          {(["tl","tr","bl","br"] as const).map(pos => (
+            <CornerBracket key={pos} position={pos} scanning={cameraState === "scanning"} />
+          ))}
 
           {/* Scanning line */}
           {cameraState === "scanning" && (
             <div
-              className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[oklch(0.72_0.09_75)] to-transparent transition-all duration-100"
-              style={{ top: `${scanProgress}%` }}
+              className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[oklch(0.72_0.09_75)] to-transparent"
+              style={{ top: `${scanProgress}%`, transition: "top 0.08s linear" }}
             />
           )}
 
-          {/* Center dot */}
+          {/* Center crosshair (idle) */}
           {cameraState === "idle" && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-white/60" />
+              <div className="relative w-6 h-6">
+                <div className="absolute top-1/2 left-0 right-0 h-px bg-white/50 -translate-y-1/2" />
+                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/50 -translate-x-1/2" />
+                <div className="absolute inset-[6px] rounded-full border border-white/40" />
+              </div>
             </div>
           )}
 
-          {/* Scanning state overlay */}
+          {/* Scanning overlay */}
           {cameraState === "scanning" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              {/* Spinning ring */}
-              <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-[oklch(0.72_0.09_75)] animate-spin" />
-              <p className="font-label text-white/90 text-sm tracking-widest">
-                Recognizing artifact…
-              </p>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              <div className="relative w-14 h-14">
+                <div className="absolute inset-0 rounded-full border-2 border-white/15 border-t-[oklch(0.72_0.09_75)] animate-spin" />
+                <div className="absolute inset-2 rounded-full border border-white/10 border-b-[oklch(0.72_0.09_75)]/60 animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <p className="font-label text-white/90 text-sm tracking-[0.15em]">
+                  正在识别展品…
+                </p>
+                <div className="flex items-center gap-1">
+                  {[0, 1, 2].map(i => (
+                    <div
+                      key={i}
+                      className="w-1 h-1 rounded-full bg-[oklch(0.72_0.09_75)]"
+                      style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         {/* Hint text */}
         {cameraState === "idle" && (
-          <p className="absolute bottom-8 left-0 right-0 text-center font-body text-white/60 text-xs tracking-wide">
-            Align the sculpture inside the frame
+          <p className="absolute bottom-6 left-0 right-0 text-center font-body text-white/55 text-xs tracking-wide">
+            对准展品，按下快门
           </p>
         )}
       </div>
 
       {/* Camera error */}
       {cameraError && (
-        <div className="relative z-10 mx-6 mb-4 p-4 bg-black/60 backdrop-blur-sm rounded-sm border border-white/20">
+        <div className="relative z-10 mx-6 mb-4 p-4 bg-black/60 backdrop-blur-sm border border-white/20">
           <p className="font-body text-white/80 text-sm text-center">{cameraError}</p>
           <button
             onClick={startCamera}
             className="mt-3 w-full py-2 border border-white/30 text-white/80 font-body text-xs tracking-widest uppercase hover:bg-white/10 transition-colors"
           >
-            Try Again
+            重试
           </button>
         </div>
       )}
 
-      {/* Bottom — Awaken button */}
-      <div className="relative z-10 flex flex-col items-center gap-4 pb-12 pt-4">
+      {/* Bottom — Shutter button */}
+      <div className="relative z-10 flex flex-col items-center gap-3 pb-12 pt-4">
         {/* Progress bar */}
         {cameraState === "scanning" && (
-          <div className="w-48 h-px bg-white/20 overflow-hidden">
+          <div className="w-48 h-px bg-white/20 overflow-hidden mb-1">
             <div
               className="h-full bg-[oklch(0.72_0.09_75)] transition-all duration-100"
               style={{ width: `${scanProgress}%` }}
@@ -194,31 +206,34 @@ export default function CameraPage() {
           </div>
         )}
 
-        {/* Awaken button */}
+        {/* Shutter button */}
         <button
           onClick={handleAwaken}
           disabled={cameraState !== "idle"}
           className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
             cameraState === "idle"
-              ? "bg-white animate-pulse-ring hover:scale-105 active:scale-95"
-              : "bg-white/50 scale-90"
+              ? "bg-white hover:scale-105 active:scale-95"
+              : "bg-white/40 scale-90 cursor-not-allowed"
           }`}
+          style={{
+            boxShadow: cameraState === "idle"
+              ? "0 0 0 4px rgba(255,255,255,0.2), 0 0 0 8px rgba(255,255,255,0.08)"
+              : "none",
+          }}
         >
           {cameraState === "idle" ? (
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="w-8 h-8 rounded-full border-2 border-[oklch(0.22_0.01_65)] flex items-center justify-center">
-                <div className="w-4 h-4 rounded-full bg-[oklch(0.22_0.01_65)]" />
-              </div>
+            <div className="w-10 h-10 rounded-full border-2 border-[oklch(0.22_0.01_65)] flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full bg-[oklch(0.22_0.01_65)]" />
             </div>
           ) : (
-            <div className="w-6 h-6 rounded-full border-2 border-[oklch(0.22_0.01_65)]/40" />
+            <div className="w-6 h-6 rounded-full border-2 border-[oklch(0.22_0.01_65)]/30" />
           )}
         </button>
 
-        {/* Button label */}
+        {/* Label */}
         <div className="flex flex-col items-center gap-1">
           <span className="font-label text-white/80 text-base tracking-[0.15em]">
-            {cameraState === "idle" ? "Awaken" : cameraState === "scanning" ? "Recognizing…" : "Found!"}
+            {cameraState === "idle" ? "唤醒" : cameraState === "scanning" ? "识别中…" : "已找到！"}
           </span>
           <div className="flex items-center gap-2">
             <div className="h-px w-4 bg-white/30" />
@@ -228,5 +243,26 @@ export default function CameraPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Corner Bracket ────────────────────────────────────────────────────────
+
+function CornerBracket({ position, scanning }: { position: "tl" | "tr" | "bl" | "br"; scanning: boolean }) {
+  const posClass = {
+    tl: "top-0 left-0 border-t-2 border-l-2",
+    tr: "top-0 right-0 border-t-2 border-r-2",
+    bl: "bottom-0 left-0 border-b-2 border-l-2",
+    br: "bottom-0 right-0 border-b-2 border-r-2",
+  }[position];
+
+  return (
+    <div
+      className={`absolute w-8 h-8 ${posClass} transition-all duration-500`}
+      style={{
+        borderColor: scanning ? "oklch(0.72 0.09 75)" : "rgba(255,255,255,0.8)",
+        filter: scanning ? "drop-shadow(0 0 4px oklch(0.72 0.09 75 / 0.8))" : "none",
+      }}
+    />
   );
 }

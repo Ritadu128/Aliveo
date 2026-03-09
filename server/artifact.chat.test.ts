@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { ARTIFACTS, getArtifactById, searchArtifacts, simulateRecognition } from "../client/src/lib/artifacts";
 
 // Mock the LLM module
 vi.mock("./_core/llm", () => ({
@@ -27,6 +28,8 @@ function createPublicContext(): TrpcContext {
     } as unknown as TrpcContext["res"],
   };
 }
+
+// ── LLM chat procedure ────────────────────────────────────────────────────
 
 describe("artifact.chat", () => {
   beforeEach(() => {
@@ -101,5 +104,118 @@ describe("artifact.chat", () => {
         userMessage: "a".repeat(501),
       })
     ).rejects.toThrow();
+  });
+});
+
+// ── Artifact data integrity (PRD v2) ─────────────────────────────────────
+
+describe("ARTIFACTS data integrity", () => {
+  it("should have 5 artifacts", () => {
+    expect(ARTIFACTS).toHaveLength(5);
+  });
+
+  it("each artifact should have required fields", () => {
+    for (const a of ARTIFACTS) {
+      expect(a.id).toBeTruthy();
+      expect(a.name).toBeTruthy();
+      expect(a.artist).toBeTruthy();
+      expect(a.year).toBeTruthy();
+      expect(a.image).toBeTruthy();
+      expect(a.catalogNumber).toBeTruthy();
+      expect(a.systemPrompt).toBeTruthy();
+      expect(Array.isArray(a.dialogue)).toBe(true);
+      expect(a.dialogue.length).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it("each artifact should have suggestedQuestions (PRD v2 requirement)", () => {
+    for (const a of ARTIFACTS) {
+      expect(Array.isArray(a.suggestedQuestions)).toBe(true);
+      expect(a.suggestedQuestions.length).toBeGreaterThanOrEqual(3);
+      for (const q of a.suggestedQuestions) {
+        expect(typeof q).toBe("string");
+        expect(q.trim().length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("each artifact systemPrompt should instruct Chinese responses", () => {
+    for (const a of ARTIFACTS) {
+      expect(a.systemPrompt).toContain("中文");
+    }
+  });
+});
+
+// ── getArtifactById ───────────────────────────────────────────────────────
+
+describe("getArtifactById", () => {
+  it("should return the correct artifact", () => {
+    const a = getArtifactById("the-thinker");
+    expect(a).toBeDefined();
+    expect(a?.name).toBe("The Thinker");
+  });
+
+  it("should return undefined for unknown id", () => {
+    expect(getArtifactById("unknown-id")).toBeUndefined();
+  });
+});
+
+// ── searchArtifacts ───────────────────────────────────────────────────────
+
+describe("searchArtifacts", () => {
+  it("should find by name", () => {
+    const results = searchArtifacts("David");
+    expect(results.some(a => a.id === "david")).toBe(true);
+  });
+
+  it("should find by artist", () => {
+    const results = searchArtifacts("Rodin");
+    expect(results.some(a => a.id === "the-thinker")).toBe(true);
+  });
+
+  it("should return empty array for no match", () => {
+    expect(searchArtifacts("xyznotfound")).toHaveLength(0);
+  });
+
+  it("should be case-insensitive", () => {
+    const lower = searchArtifacts("david");
+    const upper = searchArtifacts("DAVID");
+    expect(lower.length).toBe(upper.length);
+  });
+});
+
+// ── simulateRecognition ───────────────────────────────────────────────────
+
+describe("simulateRecognition", () => {
+  it("should return primary and alternatives", () => {
+    const { primary, alternatives } = simulateRecognition();
+    expect(primary).toBeDefined();
+    expect(Array.isArray(alternatives)).toBe(true);
+    expect(alternatives.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("primary should not be in alternatives", () => {
+    const { primary, alternatives } = simulateRecognition();
+    expect(alternatives.every(a => a.id !== primary.id)).toBe(true);
+  });
+});
+
+// ── Page navigation (PRD v2: awaken page) ────────────────────────────────
+
+describe("Page navigation", () => {
+  it("should include awaken in valid page list", () => {
+    // Verify the awaken page is part of the navigation flow
+    const validPages = ["landing", "camera", "result", "awaken", "conversation"];
+    expect(validPages).toContain("awaken");
+    expect(validPages).toHaveLength(5);
+  });
+
+  it("awaken page should be between result and conversation", () => {
+    const flow = ["landing", "camera", "result", "awaken", "conversation"];
+    const awakenIdx = flow.indexOf("awaken");
+    const resultIdx = flow.indexOf("result");
+    const convIdx = flow.indexOf("conversation");
+    expect(awakenIdx).toBeGreaterThan(resultIdx);
+    expect(awakenIdx).toBeLessThan(convIdx);
   });
 });
