@@ -264,8 +264,8 @@ describe("artifact.suggestQuestions", () => {
 // ── Artifact data integrity ───────────────────────────────────────────────
 
 describe("ARTIFACTS data integrity", () => {
-  it("should have 12 artifacts", () => {
-    expect(ARTIFACTS).toHaveLength(12);
+  it("should have at least 30 artifacts", () => {
+    expect(ARTIFACTS.length).toBeGreaterThanOrEqual(30);
   });
 
   it("each artifact should have required fields", () => {
