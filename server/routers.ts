@@ -47,20 +47,26 @@ export const appRouter = router({
         const { imageDataUrl, artifacts } = input;
 
         const artifactList = artifacts
-          .map((a, i) => `${i + 1}. id="${a.id}" name="${a.name}" — ${a.description}`)
+          .map((a, i) => `${i + 1}. id="${a.id}" | 名称: ${a.name} | 描述: ${a.description}`)
           .join("\n");
 
-        const systemPrompt = `你是一个专业的博物馆文物识别助手。用户会给你一张照片，你需要判断照片中的物体最像哪件文物。
+        const systemPrompt = `你是一个专业的博物馆文物视觉识别专家。用户会给你一张照片，你需要仔细分析照片中的视觉内容，判断它最像哪件文物。
 
-可供选择的文物列表：
+可供匹配的文物列表（共 ${artifacts.length} 件）：
 ${artifactList}
 
-规则：
-1. 仔细分析照片中的视觉特征（形状、材质、风格、时代感等）
-2. 从列表中选出最匹配的一件文物
-3. 如果照片中没有明显的文物/艺术品，选择视觉上最相似的那件
-4. 你的回复必须是且仅是一个合法的 JSON，格式如下，不要有任何其他文字：
-{"matchedId": "文物id", "confidence": 0.85, "reason": "一句话说明匹配原因"}`;
+识别步骤：
+1. 首先描述照片中你看到的主要内容（人物、物体、场景、材质、颜色、风格）
+2. 分析关键视觉特征：是雕塑还是绘画？材质是大理石/青铜/油画？有几个人物？姿态如何？
+3. 将这些特征与列表中每一件文物进行对比
+4. 选出视觉上最匹配的一件，给出 0.0-1.0 的置信度
+5. 如果照片中没有明显文物，也要根据视觉相似度选出最接近的一件
+
+重要规则：
+- 必须从列表中选择一个 id，不能返回列表外的 id
+- 不同文物有不同特征，请认真区分：雕塑vs绘画、单人vs多人、古希腊vs文艺复兴等
+- 你的回复必须是且仅是一个合法的 JSON，不要有任何其他文字：
+{"matchedId": "文物id", "confidence": 0.85, "reason": "简短说明匹配原因"}`;
 
         try {
           const response = await invokeLLM({
@@ -75,7 +81,7 @@ ${artifactList}
                   },
                   {
                     type: "text",
-                    text: "请识别这张照片中的文物，从列表中选出最匹配的一件，直接输出 JSON。",
+                    text: "请仔细分析这张照片的视觉内容，从文物列表中找出最匹配的一件，直接输出 JSON，不要有任何其他内容。",
                   },
                 ],
               },
@@ -107,10 +113,11 @@ ${artifactList}
           console.error("[recognize] LLM error:", err);
         }
 
-        // Fallback: return the first artifact with low confidence
+        // Fallback: return a random artifact (not always the first one)
+        const randomIdx = Math.floor(Math.random() * artifacts.length);
         return {
-          matchedId: artifacts[0]?.id ?? "",
-          confidence: 0.4,
+          matchedId: artifacts[randomIdx]?.id ?? artifacts[0]?.id ?? "",
+          confidence: 0.35,
           reason: "无法精确识别，已为您推荐相似展品",
         };
       }),
