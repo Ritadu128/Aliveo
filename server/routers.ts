@@ -82,7 +82,7 @@ export const appRouter = router({
 2. 问题要自然承接当前对话内容，不能与已经聊过的话题重复
 3. 每个问题简短（不超过15个字），口语化，像真实用户会说的话
 4. 问题要有梯度：一个关于刚才聊的延伸、一个关于文物本身的新角度、一个更深层的问题
-5. 只输出 JSON，格式如下，不要有任何其他文字：
+5. 你的回复必须是且仅是一个合法的 JSON 字符串，格式如下，不要包含任何 markdown 代码块、注释或其他文字：
 {"questions": ["问题1", "问题2", "问题3"]}`;
 
         const userPrompt = `文物信息：${artifactName} — ${artifactDescription}
@@ -90,40 +90,31 @@ export const appRouter = router({
 当前对话：
 ${conversationText || "（对话刚开始）"}
 
-请生成3个用户最可能问的下一个问题。`;
+请生成3个用户最可能问的下一个问题，直接输出 JSON，不要有任何其他内容。`;
 
         try {
+          // NOTE: Do NOT use response_format json_schema here.
+          // The underlying model (Gemini with thinking mode) is incompatible with
+          // json_schema response_format and silently returns empty content.
+          // We instruct the model via the system prompt and parse manually instead.
           const response = await invokeLLM({
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },
             ],
-            response_format: {
-              type: "json_schema",
-              json_schema: {
-                name: "suggested_questions",
-                strict: true,
-                schema: {
-                  type: "object",
-                  properties: {
-                    questions: {
-                      type: "array",
-                      items: { type: "string" },
-                      minItems: 3,
-                      maxItems: 3,
-                    },
-                  },
-                  required: ["questions"],
-                  additionalProperties: false,
-                },
-              },
-            },
           });
 
           const rawContent = response.choices?.[0]?.message?.content;
           if (typeof rawContent === "string") {
-            const parsed = JSON.parse(rawContent) as { questions: string[] };
-            return { questions: parsed.questions.slice(0, 3) };
+            // Strip possible markdown code fences (```json ... ```) before parsing
+            const cleaned = rawContent
+              .replace(/^```(?:json)?\s*/i, "")
+              .replace(/\s*```$/i, "")
+              .trim();
+            const parsed = JSON.parse(cleaned) as { questions: string[] };
+            if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+              return { questions: parsed.questions.slice(0, 3) };
+            }
           }
         } catch (err) {
           console.error("[suggestQuestions] LLM error:", err);
