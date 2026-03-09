@@ -1,41 +1,43 @@
+// Aliveo — App Root
+// Design: Neo-Museological
+// Single-page app with custom page state management (no URL routing needed for MVP)
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
-import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import { AppProvider, useApp } from "./contexts/AppContext";
+import LandingPage from "./pages/LandingPage";
+import CameraPage from "./pages/CameraPage";
+import ResultPage from "./pages/ResultPage";
+import ConversationPage from "./pages/ConversationPage";
 
+function PageRouter() {
+  const { currentPage } = useApp();
 
-function Router() {
-  return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
+  switch (currentPage) {
+    case "landing":
+      return <LandingPage />;
+    case "camera":
+      return <CameraPage />;
+    case "result":
+      return <ResultPage />;
+    case "conversation":
+      return <ConversationPage />;
+    default:
+      return <LandingPage />;
+  }
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (
-    <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+    <ThemeProvider defaultTheme="light">
+      <AppProvider>
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <PageRouter />
         </TooltipProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+      </AppProvider>
+    </ThemeProvider>
   );
 }
 

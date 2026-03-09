@@ -3,6 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================
+   ALIVEO DESIGN SYSTEM — Neo-Museological
+   Philosophy: Warm ivory backgrounds, Playfair Display titles,
+   DM Sans body, warm gold accents, museum label typography.
+   Signature: ✦ diamond decorators, thin-line frames, exhibit labels
+   ============================================================ */
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -40,77 +47,63 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Museum custom tokens */
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-label: "Cormorant Garamond", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --color-museum-gold: oklch(0.72 0.09 75);
+  --color-museum-gold-dark: oklch(0.55 0.1 70);
+  --color-museum-ivory: oklch(0.97 0.012 80);
+  --color-museum-warm-gray: oklch(0.93 0.008 75);
+  --color-museum-charcoal: oklch(0.22 0.01 65);
+  --color-museum-sienna: oklch(0.48 0.08 50);
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
+  --radius: 0.5rem;
+  /* Primary = warm gold */
+  --primary: oklch(0.58 0.1 72);
+  --primary-foreground: oklch(0.98 0.005 80);
+  /* Background = warm ivory */
+  --background: oklch(0.97 0.012 80);
+  --foreground: oklch(0.22 0.01 65);
+  /* Card = slightly warmer white */
+  --card: oklch(0.995 0.006 80);
+  --card-foreground: oklch(0.22 0.01 65);
+  --popover: oklch(0.995 0.006 80);
+  --popover-foreground: oklch(0.22 0.01 65);
+  /* Secondary = warm gray */
+  --secondary: oklch(0.93 0.008 75);
+  --secondary-foreground: oklch(0.35 0.01 65);
+  /* Muted */
+  --muted: oklch(0.93 0.008 75);
+  --muted-foreground: oklch(0.55 0.012 70);
+  /* Accent = light warm gold tint */
+  --accent: oklch(0.94 0.025 75);
+  --accent-foreground: oklch(0.35 0.01 65);
+  /* Destructive */
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
-}
-
-.dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  /* Border = warm light gray */
+  --border: oklch(0.88 0.01 75);
+  --input: oklch(0.88 0.01 75);
+  --ring: oklch(0.58 0.1 72);
+  /* Charts */
+  --chart-1: oklch(0.72 0.09 75);
+  --chart-2: oklch(0.62 0.1 70);
+  --chart-3: oklch(0.52 0.1 65);
+  --chart-4: oklch(0.42 0.09 60);
+  --chart-5: oklch(0.32 0.08 55);
+  /* Sidebar */
+  --sidebar: oklch(0.97 0.012 80);
+  --sidebar-foreground: oklch(0.22 0.01 65);
+  --sidebar-primary: oklch(0.58 0.1 72);
+  --sidebar-primary-foreground: oklch(0.98 0.005 80);
+  --sidebar-accent: oklch(0.93 0.008 75);
+  --sidebar-accent-foreground: oklch(0.22 0.01 65);
+  --sidebar-border: oklch(0.88 0.01 75);
+  --sidebar-ring: oklch(0.58 0.1 72);
 }
 
 @layer base {
@@ -119,6 +112,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -134,24 +132,11 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +147,163 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1280px;
     }
+  }
+
+  /* Museum typography utilities */
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-label {
+    font-family: var(--font-label);
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  /* Museum exhibit label style */
+  .exhibit-label {
+    font-family: var(--font-label);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-museum-sienna);
+  }
+
+  /* Thin decorative frame */
+  .museum-frame {
+    border: 1px solid oklch(0.72 0.09 75 / 0.4);
+    position: relative;
+  }
+  .museum-frame::before,
+  .museum-frame::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: oklch(0.72 0.09 75 / 0.7);
+    border-style: solid;
+  }
+  .museum-frame::before {
+    top: -1px;
+    left: -1px;
+    border-width: 2px 0 0 2px;
+  }
+  .museum-frame::after {
+    bottom: -1px;
+    right: -1px;
+    border-width: 0 2px 2px 0;
+  }
+
+  /* Gold accent line */
+  .gold-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, oklch(0.72 0.09 75), transparent);
+  }
+
+  /* Animate fade-up */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.5s ease-out forwards;
+  }
+
+  .animate-fade-up-delay-1 {
+    animation: fadeUp 0.5s ease-out 0.1s both;
+  }
+  .animate-fade-up-delay-2 {
+    animation: fadeUp 0.5s ease-out 0.2s both;
+  }
+  .animate-fade-up-delay-3 {
+    animation: fadeUp 0.5s ease-out 0.3s both;
+  }
+  .animate-fade-up-delay-4 {
+    animation: fadeUp 0.5s ease-out 0.4s both;
+  }
+
+  /* Pulse ring for camera */
+  @keyframes pulseRing {
+    0% { box-shadow: 0 0 0 0 oklch(0.72 0.09 75 / 0.5); }
+    70% { box-shadow: 0 0 0 12px oklch(0.72 0.09 75 / 0); }
+    100% { box-shadow: 0 0 0 0 oklch(0.72 0.09 75 / 0); }
+  }
+
+  .animate-pulse-ring {
+    animation: pulseRing 2s ease-out infinite;
+  }
+
+  /* Scanning line animation */
+  @keyframes scanLine {
+    0% { top: 0%; }
+    100% { top: 100%; }
+  }
+
+  .animate-scan {
+    animation: scanLine 2s linear infinite;
+  }
+
+  /* Typewriter cursor blink */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  .animate-blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Speech bubble tail */
+  .speech-bubble {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px oklch(0 0 0 / 0.1);
+  }
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 20px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid white;
+  }
+
+  /* Museum card hover effect */
+  .artifact-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .artifact-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px oklch(0 0 0 / 0.12);
   }
 }
