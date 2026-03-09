@@ -25,3 +25,6 @@
 - [ ] Conversation Page: update segment structure (自述→时代→故事→互动)
 - [ ] Update AppContext to include awaken page routing
 - [ ] Sync all changes to GitHub Aliveo repo
+
+## Bug Fixes & UX Improvements
+- [x] Camera Page: 默认使用后置摄像头，添加翻转摄像头按钮（前/后置切换）

@@ -12,6 +12,7 @@ import { useApp } from "@/contexts/AppContext";
 import { simulateRecognition } from "@/lib/artifacts";
 
 type CameraState = "idle" | "scanning" | "done";
+type FacingMode = "environment" | "user";
 
 export default function CameraPage() {
   const { setCurrentPage, setSelectedArtifact, setCapturedImage } = useApp();
@@ -21,11 +22,19 @@ export default function CameraPage() {
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanProgress, setScanProgress] = useState(0);
+  // Default to rear camera for artifact scanning
+  const [facingMode, setFacingMode] = useState<FacingMode>("environment");
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (facing: FacingMode = "environment") => {
+    // Stop any existing stream first
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setCameraError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
       streamRef.current = stream;
@@ -37,8 +46,15 @@ export default function CameraPage() {
     }
   }, []);
 
+  const flipCamera = useCallback(() => {
+    if (cameraState !== "idle") return;
+    const next: FacingMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(next);
+    startCamera(next);
+  }, [facingMode, cameraState, startCamera]);
+
   useEffect(() => {
-    startCamera();
+    startCamera("environment");
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
@@ -186,7 +202,7 @@ export default function CameraPage() {
         <div className="relative z-10 mx-6 mb-4 p-4 bg-black/60 backdrop-blur-sm border border-white/20">
           <p className="font-body text-white/80 text-sm text-center">{cameraError}</p>
           <button
-            onClick={startCamera}
+            onClick={() => startCamera(facingMode)}
             className="mt-3 w-full py-2 border border-white/30 text-white/80 font-body text-xs tracking-widest uppercase hover:bg-white/10 transition-colors"
           >
             重试
@@ -196,6 +212,27 @@ export default function CameraPage() {
 
       {/* Bottom — Shutter button */}
       <div className="relative z-10 flex flex-col items-center gap-3 pb-12 pt-4">
+        {/* Flip camera button */}
+        {cameraState === "idle" && (
+          <button
+            onClick={flipCamera}
+            className="absolute right-8 bottom-[calc(3rem+5.5rem)] flex flex-col items-center gap-1.5 group"
+            aria-label="翻转摄像头"
+          >
+            <div className="w-11 h-11 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center group-hover:bg-white/25 group-active:scale-90 transition-all duration-200">
+              {/* Flip icon */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 7h-9" />
+                <path d="M14 17H5" />
+                <polyline points="17 4 20 7 17 10" />
+                <polyline points="8 14 5 17 8 20" />
+              </svg>
+            </div>
+            <span className="font-label text-white/60 text-[10px] tracking-wide">
+              {facingMode === "environment" ? "后置" : "前置"}
+            </span>
+          </button>
+        )}
         {/* Progress bar */}
         {cameraState === "scanning" && (
           <div className="w-48 h-px bg-white/20 overflow-hidden mb-1">
