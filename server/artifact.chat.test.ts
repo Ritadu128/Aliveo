@@ -3,58 +3,39 @@ import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { ARTIFACTS, getArtifactById, searchArtifacts, simulateRecognition } from "../client/src/lib/artifacts";
 
-// Mock the LLM module
+// ── LLM mock ──────────────────────────────────────────────────────────────
+
 vi.mock("./_core/llm", () => ({
   invokeLLM: vi.fn().mockResolvedValue({
-    choices: [
-      {
-        message: {
-          content: "我是胜利女神，很高兴见到你！",
-        },
-      },
-    ],
+    choices: [{ message: { content: "我是胜利女神，很高兴见到你！" } }],
   }),
 }));
 
-function createPublicContext(): TrpcContext {
+function createCtx(): TrpcContext {
   return {
     user: null,
-    req: {
-      protocol: "https",
-      headers: {},
-    } as TrpcContext["req"],
-    res: {
-      clearCookie: vi.fn(),
-    } as unknown as TrpcContext["res"],
+    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
 }
 
-// ── LLM chat procedure ────────────────────────────────────────────────────
+beforeEach(() => vi.clearAllMocks());
+
+// ── artifact.chat ─────────────────────────────────────────────────────────
 
 describe("artifact.chat", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("returns LLM reply for a user message", async () => {
-    const ctx = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-
-    const result = await caller.artifact.chat({
+    const result = await appRouter.createCaller(createCtx()).artifact.chat({
       systemPrompt: "你是胜利女神 Nike，请用中文回答。",
       history: [],
       userMessage: "你好！",
     });
-
     expect(result.reply).toBe("我是胜利女神，很高兴见到你！");
   });
 
   it("includes conversation history in LLM call", async () => {
     const { invokeLLM } = await import("./_core/llm");
-    const ctx = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-
-    await caller.artifact.chat({
+    await appRouter.createCaller(createCtx()).artifact.chat({
       systemPrompt: "你是胜利女神 Nike。",
       history: [
         { role: "user", content: "你是谁？" },
@@ -62,7 +43,6 @@ describe("artifact.chat", () => {
       ],
       userMessage: "你在哪里？",
     });
-
     expect(invokeLLM).toHaveBeenCalledWith(
       expect.objectContaining({
         messages: expect.arrayContaining([
@@ -78,36 +58,135 @@ describe("artifact.chat", () => {
   it("returns fallback text when LLM returns non-string content", async () => {
     const { invokeLLM } = await import("./_core/llm");
     vi.mocked(invokeLLM).mockResolvedValueOnce({
-      choices: [{ message: { content: [{ type: "text", text: "array content" }] } }],
+      choices: [{ message: { content: [{ type: "text", text: "array" }] } }],
     } as never);
-
-    const ctx = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-
-    const result = await caller.artifact.chat({
-      systemPrompt: "你是胜利女神。",
+    const result = await appRouter.createCaller(createCtx()).artifact.chat({
+      systemPrompt: "你是雕塑。",
       history: [],
       userMessage: "你好",
     });
-
     expect(result.reply).toBe("……（沉默）");
   });
 
   it("rejects messages exceeding 500 characters", async () => {
-    const ctx = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-
     await expect(
-      caller.artifact.chat({
-        systemPrompt: "你是胜利女神。",
+      appRouter.createCaller(createCtx()).artifact.chat({
+        systemPrompt: "你是雕塑。",
         history: [],
         userMessage: "a".repeat(501),
       })
     ).rejects.toThrow();
   });
+
+  it("only sends last 10 history turns to the LLM", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    const longHistory = Array.from({ length: 20 }, (_, i) => ({
+      role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+      content: `消息 ${i}`,
+    }));
+    await appRouter.createCaller(createCtx()).artifact.chat({
+      systemPrompt: "你是雕塑。",
+      history: longHistory,
+      userMessage: "最新问题",
+    });
+    const callArgs = vi.mocked(invokeLLM).mock.calls[0]?.[0];
+    // system(1) + last 10 history + user(1) = 12
+    expect(callArgs?.messages).toHaveLength(12);
+  });
 });
 
-// ── Artifact data integrity (PRD v2) ─────────────────────────────────────
+// ── artifact.suggestQuestions ─────────────────────────────────────────────
+
+describe("artifact.suggestQuestions", () => {
+  it("returns 3 contextual questions from LLM", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              questions: ["你的翅膀有多大？", "你是在哪里被发现的？", "你最喜欢哪个时代？"],
+            }),
+          },
+        },
+      ],
+    } as never);
+
+    const result = await appRouter.createCaller(createCtx()).artifact.suggestQuestions({
+      artifactName: "Winged Victory",
+      artifactDescription: "A Hellenistic marble sculpture of Nike.",
+      history: [
+        { role: "user", content: "你好！" },
+        { role: "assistant", content: "你好，访客！" },
+      ],
+    });
+
+    expect(result.questions).toHaveLength(3);
+    expect(result.questions[0]).toBe("你的翅膀有多大？");
+  });
+
+  it("returns empty array when LLM throws", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockRejectedValueOnce(new Error("LLM timeout"));
+
+    const result = await appRouter.createCaller(createCtx()).artifact.suggestQuestions({
+      artifactName: "The Thinker",
+      artifactDescription: "A bronze sculpture by Rodin.",
+      history: [],
+    });
+
+    expect(result.questions).toEqual([]);
+  });
+
+  it("returns at most 3 questions even if LLM returns more", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({ questions: ["Q1", "Q2", "Q3", "Q4", "Q5"] }),
+          },
+        },
+      ],
+    } as never);
+
+    const result = await appRouter.createCaller(createCtx()).artifact.suggestQuestions({
+      artifactName: "David",
+      artifactDescription: "Michelangelo's marble statue.",
+      history: [],
+    });
+
+    expect(result.questions.length).toBeLessThanOrEqual(3);
+  });
+
+  it("only uses last 6 history turns for suggestion context", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockResolvedValueOnce({
+      choices: [
+        { message: { content: JSON.stringify({ questions: ["问题A", "问题B", "问题C"] }) } },
+      ],
+    } as never);
+
+    const longHistory = Array.from({ length: 12 }, (_, i) => ({
+      role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+      content: `对话 ${i}`,
+    }));
+
+    await appRouter.createCaller(createCtx()).artifact.suggestQuestions({
+      artifactName: "Venus de Milo",
+      artifactDescription: "An ancient Greek statue.",
+      history: longHistory,
+    });
+
+    const callArgs = vi.mocked(invokeLLM).mock.calls[0]?.[0];
+    const userMsg = callArgs?.messages?.find(m => m.role === "user");
+    // Only last 6 turns should appear in the prompt
+    expect(userMsg?.content).toContain("对话 6");
+    expect(userMsg?.content).not.toContain("对话 0");
+  });
+});
+
+// ── Artifact data integrity ───────────────────────────────────────────────
 
 describe("ARTIFACTS data integrity", () => {
   it("should have 5 artifacts", () => {
@@ -128,14 +207,10 @@ describe("ARTIFACTS data integrity", () => {
     }
   });
 
-  it("each artifact should have suggestedQuestions (PRD v2 requirement)", () => {
+  it("each artifact should have description field (required by suggestQuestions)", () => {
     for (const a of ARTIFACTS) {
-      expect(Array.isArray(a.suggestedQuestions)).toBe(true);
-      expect(a.suggestedQuestions.length).toBeGreaterThanOrEqual(3);
-      for (const q of a.suggestedQuestions) {
-        expect(typeof q).toBe("string");
-        expect(q.trim().length).toBeGreaterThan(0);
-      }
+      expect(typeof a.description).toBe("string");
+      expect(a.description.trim().length).toBeGreaterThan(0);
     }
   });
 
@@ -200,11 +275,10 @@ describe("simulateRecognition", () => {
   });
 });
 
-// ── Page navigation (PRD v2: awaken page) ────────────────────────────────
+// ── Page navigation ───────────────────────────────────────────────────────
 
 describe("Page navigation", () => {
   it("should include awaken in valid page list", () => {
-    // Verify the awaken page is part of the navigation flow
     const validPages = ["landing", "camera", "result", "awaken", "conversation"];
     expect(validPages).toContain("awaken");
     expect(validPages).toHaveLength(5);
@@ -213,9 +287,7 @@ describe("Page navigation", () => {
   it("awaken page should be between result and conversation", () => {
     const flow = ["landing", "camera", "result", "awaken", "conversation"];
     const awakenIdx = flow.indexOf("awaken");
-    const resultIdx = flow.indexOf("result");
-    const convIdx = flow.indexOf("conversation");
-    expect(awakenIdx).toBeGreaterThan(resultIdx);
-    expect(awakenIdx).toBeLessThan(convIdx);
+    expect(awakenIdx).toBeGreaterThan(flow.indexOf("result"));
+    expect(awakenIdx).toBeLessThan(flow.indexOf("conversation"));
   });
 });

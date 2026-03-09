@@ -1,11 +1,8 @@
-// Aliveo — Conversation Page (PRD v2: 猜你想问 + 优化布局)
+// Aliveo — Conversation Page
 // Design: Neo-Museological
 //
-// PRD v2 新增：
-//   - 「猜你想问」快捷问题气泡（intro 完成后出现）
-//   - 中文文案：返回、你正在与…对话
-//   - 输入框 placeholder 更自然
-//   - 底部控制区优化：Skip▷ / 继续 / 开始聊天
+// 「猜你想问」：每轮对话结束后，调用 LLM 基于当前对话上下文动态生成3个推荐问题
+// 推荐问题会随着对话深入而不断变化，真正贴合用户下一个最可能提出的问题
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useApp } from "@/contexts/AppContext";
@@ -31,6 +28,10 @@ export default function ConversationPage() {
   const [introComplete, setIntroComplete] = useState(false);
   const [userInput, setUserInput] = useState("");
   const [isLLMLoading, setIsLLMLoading] = useState(false);
+
+  // Dynamic suggested questions — updated after each artifact reply
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+  const [isSuggestLoading, setIsSuggestLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const llmHistoryRef = useRef<Array<{ role: "user" | "assistant"; content: string }>>([]);
@@ -40,9 +41,9 @@ export default function ConversationPage() {
   const currentMsgIdRef = useRef<number>(0);
 
   const dialogue = selectedArtifact?.dialogue ?? [];
-  const suggestedQuestions = selectedArtifact?.suggestedQuestions ?? [];
 
   const chatMutation = trpc.artifact.chat.useMutation();
+  const suggestMutation = trpc.artifact.suggestQuestions.useMutation();
 
   const scrollToBottom = useCallback((smooth = true) => {
     requestAnimationFrame(() => {
@@ -80,6 +81,29 @@ export default function ConversationPage() {
     }, TYPING_SPEED);
   }, [scrollToBottom]);
 
+  // Fetch dynamic suggested questions based on current conversation
+  const fetchSuggestedQuestions = useCallback(async () => {
+    if (!selectedArtifact) return;
+    setIsSuggestLoading(true);
+    setShowSuggestions(false);
+    try {
+      const result = await suggestMutation.mutateAsync({
+        artifactName: selectedArtifact.name,
+        artifactDescription: selectedArtifact.description,
+        history: llmHistoryRef.current,
+      });
+      if (result.questions.length > 0) {
+        setSuggestedQuestions(result.questions);
+        // Small delay before showing so it feels natural
+        setTimeout(() => setShowSuggestions(true), 300);
+      }
+    } catch {
+      // Silently fail — suggestions are a nice-to-have
+    } finally {
+      setIsSuggestLoading(false);
+    }
+  }, [selectedArtifact, suggestMutation]);
+
   const handleSkip = useCallback(() => {
     if (!isTyping) return;
     if (typingIntervalRef.current) {
@@ -103,8 +127,9 @@ export default function ConversationPage() {
 
     if (nextIntroIndex >= dialogue.length) {
       setIntroComplete(true);
+      // Fetch initial suggestions based on intro monologues
       setTimeout(() => {
-        setShowSuggestions(true);
+        fetchSuggestedQuestions();
         inputRef.current?.focus();
       }, 400);
       return;
@@ -119,7 +144,7 @@ export default function ConversationPage() {
     scrollToBottom();
 
     setTimeout(() => startTyping(fullText, msgId), 80);
-  }, [isTyping, nextIntroIndex, dialogue, scrollToBottom, startTyping]);
+  }, [isTyping, nextIntroIndex, dialogue, scrollToBottom, startTyping, fetchSuggestedQuestions]);
 
   // Auto-start first intro message
   useEffect(() => {
@@ -148,6 +173,7 @@ export default function ConversationPage() {
 
     setUserInput("");
     setShowSuggestions(false);
+    setSuggestedQuestions([]);
 
     const userMsgId = Date.now();
     setMessages(prev => [
@@ -179,8 +205,8 @@ export default function ConversationPage() {
 
       setTimeout(() => {
         startTyping(reply, artifactMsgId, () => {
-          // Show suggestions again after artifact replies
-          setTimeout(() => setShowSuggestions(true), 600);
+          // After artifact finishes typing, fetch new contextual suggestions
+          fetchSuggestedQuestions();
         });
       }, 80);
     } catch {
@@ -195,11 +221,12 @@ export default function ConversationPage() {
         },
       ]);
       scrollToBottom();
-      setTimeout(() => setShowSuggestions(true), 600);
+      // Still try to show suggestions even after error
+      setTimeout(() => fetchSuggestedQuestions(), 600);
     } finally {
       setIsLLMLoading(false);
     }
-  }, [userInput, isLLMLoading, isTyping, selectedArtifact, chatMutation, scrollToBottom, startTyping]);
+  }, [userInput, isLLMLoading, isTyping, selectedArtifact, chatMutation, scrollToBottom, startTyping, fetchSuggestedQuestions]);
 
   const handleSend = useCallback(() => {
     sendMessage(userInput);
@@ -294,10 +321,8 @@ export default function ConversationPage() {
           )
         )}
 
-        {/* Three-dot typing indicator */}
-        {(isLLMLoading && !isTyping) ? (
-          <TypingDots />
-        ) : null}
+        {/* Three-dot typing indicator while waiting for LLM */}
+        {isLLMLoading && !isTyping ? <TypingDots /> : null}
 
         <div className="h-2" />
       </div>
@@ -341,7 +366,7 @@ export default function ConversationPage() {
                   onClick={() => {
                     setIntroComplete(true);
                     setTimeout(() => {
-                      setShowSuggestions(true);
+                      fetchSuggestedQuestions();
                       inputRef.current?.focus();
                     }, 400);
                   }}
@@ -380,29 +405,40 @@ export default function ConversationPage() {
         {/* ── CHAT MODE ── */}
         {introComplete && (
           <>
-            {/* 猜你想问 — suggested questions */}
-            {showSuggestions && suggestedQuestions.length > 0 && !isLLMLoading && !isTyping && (
-              <div
-                className="mb-3"
-                style={{ animation: "fadeUpIn 0.4s ease both" }}
-              >
-                <p className="exhibit-label text-white/40 text-[0.6rem] tracking-[0.12em] mb-2 text-center">
-                  ✦ 猜你想问 ✦
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {suggestedQuestions.map((q, i) => (
-                    <button
+            {/* 猜你想问 — LLM-generated contextual suggestions */}
+            <div className="mb-3 min-h-[52px]">
+              {isSuggestLoading && (
+                <div className="flex items-center justify-center gap-1.5 py-2">
+                  {[0, 1, 2].map(i => (
+                    <div
                       key={i}
-                      onClick={() => handleSuggestedQuestion(q)}
-                      className="px-3 py-1.5 bg-white/10 border border-white/20 text-white/80 font-body text-xs rounded-full hover:bg-white/20 hover:border-[oklch(0.72_0.09_75)]/60 hover:text-white transition-all duration-200 active:scale-95"
-                      style={{ animationDelay: `${i * 0.05}s` }}
-                    >
-                      {q}
-                    </button>
+                      className="w-1 h-1 rounded-full bg-white/30"
+                      style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+                    />
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+
+              {showSuggestions && suggestedQuestions.length > 0 && !isLLMLoading && !isTyping && (
+                <div style={{ animation: "fadeUpIn 0.35s ease both" }}>
+                  <p className="exhibit-label text-white/35 text-[0.58rem] tracking-[0.14em] mb-2 text-center">
+                    ✦ 猜你想问 ✦
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {suggestedQuestions.map((q, i) => (
+                      <button
+                        key={`${q}-${i}`}
+                        onClick={() => handleSuggestedQuestion(q)}
+                        className="px-3 py-1.5 bg-white/10 border border-white/20 text-white/80 font-body text-xs rounded-full hover:bg-white/20 hover:border-[oklch(0.72_0.09_75)]/60 hover:text-white transition-all duration-200 active:scale-95"
+                        style={{ animation: `fadeUpIn 0.35s ease ${i * 0.06}s both` }}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Input box */}
             <div className="flex items-end gap-2">
