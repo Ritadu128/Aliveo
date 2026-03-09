@@ -21,7 +21,78 @@ function createCtx(): TrpcContext {
 
 beforeEach(() => vi.clearAllMocks());
 
-// ── artifact.chat ─────────────────────────────────────────────────────────
+// ── // ── artifact.recognize ──────────────────────────────────────────────
+
+const MOCK_ARTIFACTS_FOR_RECOGNIZE = [
+  { id: "winged-victory", name: "Winged Victory of Samothrace", description: "Hellenistic Nike sculpture" },
+  { id: "the-thinker", name: "The Thinker", description: "Rodin bronze sculpture" },
+  { id: "venus-de-milo", name: "Venus de Milo", description: "Ancient Greek Aphrodite statue" },
+];
+
+describe("artifact.recognize", () => {
+  it("returns matched artifact id from LLM response", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockResolvedValueOnce({
+      choices: [{ message: { content: '{"matchedId": "the-thinker", "confidence": 0.92, "reason": "Bronze seated figure"}' } }],
+    } as never);
+    const result = await appRouter.createCaller(createCtx()).artifact.recognize({
+      imageDataUrl: "data:image/jpeg;base64,/9j/fake",
+      artifacts: MOCK_ARTIFACTS_FOR_RECOGNIZE,
+    });
+    expect(result.matchedId).toBe("the-thinker");
+    expect(result.confidence).toBeCloseTo(0.92);
+  });
+
+  it("strips markdown code fences from LLM JSON response", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockResolvedValueOnce({
+      choices: [{ message: { content: '```json\n{"matchedId": "venus-de-milo", "confidence": 0.78, "reason": "Female marble torso"}\n```' } }],
+    } as never);
+    const result = await appRouter.createCaller(createCtx()).artifact.recognize({
+      imageDataUrl: "data:image/jpeg;base64,/9j/fake",
+      artifacts: MOCK_ARTIFACTS_FOR_RECOGNIZE,
+    });
+    expect(result.matchedId).toBe("venus-de-milo");
+  });
+
+  it("falls back to first artifact when LLM returns unknown id", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockResolvedValueOnce({
+      choices: [{ message: { content: '{"matchedId": "nonexistent-id", "confidence": 0.5, "reason": "No match"}' } }],
+    } as never);
+    const result = await appRouter.createCaller(createCtx()).artifact.recognize({
+      imageDataUrl: "data:image/jpeg;base64,/9j/fake",
+      artifacts: MOCK_ARTIFACTS_FOR_RECOGNIZE,
+    });
+    expect(result.matchedId).toBe("winged-victory");
+    expect(result.confidence).toBe(0.4);
+  });
+
+  it("falls back gracefully when LLM throws", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockRejectedValueOnce(new Error("Network error"));
+    const result = await appRouter.createCaller(createCtx()).artifact.recognize({
+      imageDataUrl: "data:image/jpeg;base64,/9j/fake",
+      artifacts: MOCK_ARTIFACTS_FOR_RECOGNIZE,
+    });
+    expect(result.matchedId).toBe("winged-victory");
+    expect(result.confidence).toBe(0.4);
+  });
+
+  it("clamps confidence to [0, 1] range", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    vi.mocked(invokeLLM).mockResolvedValueOnce({
+      choices: [{ message: { content: '{"matchedId": "the-thinker", "confidence": 1.5, "reason": "Very confident"}' } }],
+    } as never);
+    const result = await appRouter.createCaller(createCtx()).artifact.recognize({
+      imageDataUrl: "data:image/jpeg;base64,/9j/fake",
+      artifacts: MOCK_ARTIFACTS_FOR_RECOGNIZE,
+    });
+    expect(result.confidence).toBeLessThanOrEqual(1);
+  });
+});
+
+// ── artifact.chat ─────────────────────────────────────────────────
 
 describe("artifact.chat", () => {
   it("returns LLM reply for a user message", async () => {

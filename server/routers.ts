@@ -24,6 +24,97 @@ export const appRouter = router({
 
   // Artifact conversation via LLM
   artifact: router({
+    // ── Image Recognition ─────────────────────────────────────────────────
+    // Accepts a base64-encoded JPEG/PNG from the camera, sends it to the
+    // multimodal LLM for analysis, and returns the best-matching artifact ID
+    // along with a confidence score and a short description of what was seen.
+    recognize: publicProcedure
+      .input(
+        z.object({
+          // base64 data URL: "data:image/jpeg;base64,..."
+          imageDataUrl: z.string().min(10),
+          // List of artifact IDs + names the LLM can choose from
+          artifacts: z.array(
+            z.object({
+              id: z.string(),
+              name: z.string(),
+              description: z.string(),
+            })
+          ),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { imageDataUrl, artifacts } = input;
+
+        const artifactList = artifacts
+          .map((a, i) => `${i + 1}. id="${a.id}" name="${a.name}" — ${a.description}`)
+          .join("\n");
+
+        const systemPrompt = `你是一个专业的博物馆文物识别助手。用户会给你一张照片，你需要判断照片中的物体最像哪件文物。
+
+可供选择的文物列表：
+${artifactList}
+
+规则：
+1. 仔细分析照片中的视觉特征（形状、材质、风格、时代感等）
+2. 从列表中选出最匹配的一件文物
+3. 如果照片中没有明显的文物/艺术品，选择视觉上最相似的那件
+4. 你的回复必须是且仅是一个合法的 JSON，格式如下，不要有任何其他文字：
+{"matchedId": "文物id", "confidence": 0.85, "reason": "一句话说明匹配原因"}`;
+
+        try {
+          const response = await invokeLLM({
+            messages: [
+              { role: "system", content: systemPrompt },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "image_url",
+                    image_url: { url: imageDataUrl, detail: "high" },
+                  },
+                  {
+                    type: "text",
+                    text: "请识别这张照片中的文物，从列表中选出最匹配的一件，直接输出 JSON。",
+                  },
+                ],
+              },
+            ],
+          });
+
+          const rawContent = response.choices?.[0]?.message?.content;
+          if (typeof rawContent === "string") {
+            const cleaned = rawContent
+              .replace(/^```(?:json)?\s*/i, "")
+              .replace(/\s*```$/i, "")
+              .trim();
+            const parsed = JSON.parse(cleaned) as {
+              matchedId: string;
+              confidence: number;
+              reason: string;
+            };
+            // Validate the returned id exists in our list
+            const valid = artifacts.find(a => a.id === parsed.matchedId);
+            if (valid) {
+              return {
+                matchedId: parsed.matchedId,
+                confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.7)),
+                reason: parsed.reason ?? "",
+              };
+            }
+          }
+        } catch (err) {
+          console.error("[recognize] LLM error:", err);
+        }
+
+        // Fallback: return the first artifact with low confidence
+        return {
+          matchedId: artifacts[0]?.id ?? "",
+          confidence: 0.4,
+          reason: "无法精确识别，已为您推荐相似展品",
+        };
+      }),
+
     // ── Main chat ──────────────────────────────────────────────────────────
     chat: publicProcedure
       .input(

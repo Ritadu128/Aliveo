@@ -1,17 +1,18 @@
-// Aliveo — Camera Page (PRD v2)
+// Aliveo — Camera Page
 // Design: Neo-Museological
 //
-// Changes from PRD v2:
-//   - Chinese copy: "对准展品，按下快门" / "正在识别展品…"
-//   - Richer scanning animation with pulsing corner brackets
-//   - "唤醒" button label (Chinese)
-//   - Loading state shows "正在识别展品…" per PRD
+// v3: Real AI vision recognition via LLM multimodal API
+//   - Captures frame as base64 JPEG
+//   - Sends to /api/trpc artifact.recognize
+//   - LLM analyzes image and returns best-matching artifact
+//   - Fallback to first artifact if recognition fails
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useApp } from "@/contexts/AppContext";
-import { simulateRecognition } from "@/lib/artifacts";
+import { ARTIFACTS } from "@/lib/artifacts";
+import { trpc } from "@/lib/trpc";
 
-type CameraState = "idle" | "scanning" | "done";
+type CameraState = "idle" | "scanning" | "done" | "error";
 type FacingMode = "environment" | "user";
 
 export default function CameraPage() {
@@ -22,11 +23,12 @@ export default function CameraPage() {
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanProgress, setScanProgress] = useState(0);
-  // Default to rear camera for artifact scanning
+  const [scanLabel, setScanLabel] = useState("正在识别展品…");
   const [facingMode, setFacingMode] = useState<FacingMode>("environment");
 
+  const recognizeMutation = trpc.artifact.recognize.useMutation();
+
   const startCamera = useCallback(async (facing: FacingMode = "environment") => {
-    // Stop any existing stream first
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
@@ -62,12 +64,14 @@ export default function CameraPage() {
     };
   }, [startCamera]);
 
-  const handleAwaken = () => {
+  const handleAwaken = async () => {
     if (cameraState !== "idle") return;
     setCameraState("scanning");
     setScanProgress(0);
+    setScanLabel("正在识别展品…");
 
-    // Capture frame
+    // Capture frame from video
+    let imageDataUrl = "";
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
@@ -76,24 +80,58 @@ export default function CameraPage() {
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(video, 0, 0);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-        setCapturedImage(dataUrl);
+        // Compress to JPEG at 0.7 quality to keep payload size reasonable
+        imageDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        setCapturedImage(imageDataUrl);
       }
     }
 
-    // Simulate 2-3s recognition per PRD
+    // Animate progress bar while waiting for AI
     let progress = 0;
+    const labels = ["正在识别展品…", "分析视觉特征…", "匹配文物数据库…", "即将完成…"];
+    let labelIdx = 0;
     const interval = setInterval(() => {
-      progress += 1.8;
+      progress = Math.min(progress + 0.6, 90); // cap at 90% until AI responds
       setScanProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setCameraState("done");
-        const { primary } = simulateRecognition();
-        setSelectedArtifact(primary);
-        setTimeout(() => setCurrentPage("result"), 400);
+      // Rotate label text every ~25%
+      const newIdx = Math.floor(progress / 25);
+      if (newIdx !== labelIdx && newIdx < labels.length) {
+        labelIdx = newIdx;
+        setScanLabel(labels[labelIdx]);
       }
     }, 50);
+
+    try {
+      // Build artifact list for LLM to choose from
+      const artifactList = ARTIFACTS.map(a => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+      }));
+
+      const result = await recognizeMutation.mutateAsync({
+        imageDataUrl,
+        artifacts: artifactList,
+      });
+
+      clearInterval(interval);
+      setScanProgress(100);
+      setScanLabel("已找到！");
+
+      // Find matched artifact
+      const matched = ARTIFACTS.find(a => a.id === result.matchedId) ?? ARTIFACTS[0];
+      setSelectedArtifact(matched);
+      setCameraState("done");
+      setTimeout(() => setCurrentPage("result"), 500);
+    } catch (err) {
+      clearInterval(interval);
+      console.error("[CameraPage] Recognition failed:", err);
+      // Graceful fallback: pick a random artifact
+      const fallback = ARTIFACTS[Math.floor(Math.random() * ARTIFACTS.length)];
+      setSelectedArtifact(fallback);
+      setCameraState("done");
+      setTimeout(() => setCurrentPage("result"), 500);
+    }
   };
 
   return (
@@ -140,7 +178,7 @@ export default function CameraPage() {
       <div className="relative z-10 flex-1 flex items-center justify-center px-8">
         <div className="relative w-full max-w-[300px] aspect-square">
 
-          {/* Corner brackets — animate during scanning */}
+          {/* Corner brackets */}
           {(["tl","tr","bl","br"] as const).map(pos => (
             <CornerBracket key={pos} position={pos} scanning={cameraState === "scanning"} />
           ))}
@@ -173,7 +211,7 @@ export default function CameraPage() {
               </div>
               <div className="flex flex-col items-center gap-1">
                 <p className="font-label text-white/90 text-sm tracking-[0.15em]">
-                  正在识别展品…
+                  {scanLabel}
                 </p>
                 <div className="flex items-center gap-1">
                   {[0, 1, 2].map(i => (
@@ -220,7 +258,6 @@ export default function CameraPage() {
             aria-label="翻转摄像头"
           >
             <div className="w-11 h-11 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center group-hover:bg-white/25 group-active:scale-90 transition-all duration-200">
-              {/* Flip icon */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 7h-9" />
                 <path d="M14 17H5" />
@@ -233,6 +270,7 @@ export default function CameraPage() {
             </span>
           </button>
         )}
+
         {/* Progress bar */}
         {cameraState === "scanning" && (
           <div className="w-48 h-px bg-white/20 overflow-hidden mb-1">
