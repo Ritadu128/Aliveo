@@ -1,9 +1,10 @@
 // Aliveo — App Root
 // Design: Neo-Museological
-// Single-page app with custom page state management (no URL routing needed for MVP)
+// Single-page app with custom page state management
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import LandingPage from "./pages/LandingPage";
@@ -13,7 +14,6 @@ import ConversationPage from "./pages/ConversationPage";
 
 function PageRouter() {
   const { currentPage } = useApp();
-
   switch (currentPage) {
     case "landing":
       return <LandingPage />;
@@ -30,14 +30,16 @@ function PageRouter() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light">
-      <AppProvider>
-        <TooltipProvider>
-          <Toaster />
-          <PageRouter />
-        </TooltipProvider>
-      </AppProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light">
+        <AppProvider>
+          <TooltipProvider>
+            <Toaster />
+            <PageRouter />
+          </TooltipProvider>
+        </AppProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
