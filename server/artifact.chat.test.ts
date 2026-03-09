@@ -55,7 +55,7 @@ describe("artifact.recognize", () => {
     expect(result.matchedId).toBe("venus-de-milo");
   });
 
-  it("falls back to first artifact when LLM returns unknown id", async () => {
+  it("falls back to a valid artifact when LLM returns unknown id", async () => {
     const { invokeLLM } = await import("./_core/llm");
     vi.mocked(invokeLLM).mockResolvedValueOnce({
       choices: [{ message: { content: '{"matchedId": "nonexistent-id", "confidence": 0.5, "reason": "No match"}' } }],
@@ -64,8 +64,10 @@ describe("artifact.recognize", () => {
       imageDataUrl: "data:image/jpeg;base64,/9j/fake",
       artifacts: MOCK_ARTIFACTS_FOR_RECOGNIZE,
     });
-    expect(result.matchedId).toBe("winged-victory");
-    expect(result.confidence).toBe(0.4);
+    // When LLM returns an unknown id, fallback to a random valid artifact
+    const validIds = MOCK_ARTIFACTS_FOR_RECOGNIZE.map(a => a.id);
+    expect(validIds).toContain(result.matchedId);
+    expect(result.confidence).toBe(0.35);
   });
 
   it("falls back gracefully when LLM throws", async () => {
@@ -75,8 +77,10 @@ describe("artifact.recognize", () => {
       imageDataUrl: "data:image/jpeg;base64,/9j/fake",
       artifacts: MOCK_ARTIFACTS_FOR_RECOGNIZE,
     });
-    expect(result.matchedId).toBe("winged-victory");
-    expect(result.confidence).toBe(0.4);
+    // Fallback now returns a random artifact from the list (not always the first)
+    const validIds = MOCK_ARTIFACTS_FOR_RECOGNIZE.map(a => a.id);
+    expect(validIds).toContain(result.matchedId);
+    expect(result.confidence).toBe(0.35);
   });
 
   it("clamps confidence to [0, 1] range", async () => {
