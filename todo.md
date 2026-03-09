@@ -28,3 +28,4 @@
 
 ## Bug Fixes & UX Improvements
 - [x] Camera Page: 默认使用后置摄像头，添加翻转摄像头按钮（前/后置切换）
+- [x] 拍照识别：接入 LLM 视觉 API，实现真实 AI 图像识别（替换模拟数据）
