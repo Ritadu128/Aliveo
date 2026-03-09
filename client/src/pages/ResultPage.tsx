@@ -1,9 +1,11 @@
-// Aliveo — Recognition Result Page
+// Aliveo — Recognition Result Page (PRD v2)
 // Design: Neo-Museological
-// - Primary artifact card with museum exhibit label style
-// - Horizontal scroll candidates
-// - Search bar styled as museum catalog search
-// - Fun detail: "Match confidence" shown as a decorative percentage
+//
+// Changes from PRD v2:
+//   - Chinese copy throughout
+//   - 【就是这个】→ conversation, 【重新选择】→ camera
+//   - "不是这个？试试这些：" for alternatives
+//   - Search placeholder: "搜索展品名称"
 
 import { useState, useEffect } from "react";
 import { useApp } from "@/contexts/AppContext";
@@ -15,7 +17,7 @@ export default function ResultPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Artifact[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [matchConfidence] = useState(94); // Fun simulated confidence
+  const [matchConfidence] = useState(94);
 
   const alternatives = ARTIFACTS.filter(a => a.id !== selectedArtifact?.id).slice(0, 3);
 
@@ -45,14 +47,14 @@ export default function ResultPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setCurrentPage("camera")}
-            className="flex items-center gap-1.5 text-[oklch(0.45_0.01_65)] hover:text-[oklch(0.22_0.01_65)] transition-colors"
+            className="flex items-center gap-1.5 text-[oklch(0.45_0.01_65)] hover:text-[oklch(0.22_0.01_65)] transition-colors active:scale-95"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M11 3L5 9L11 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           <div className="flex-1 text-center">
-            <p className="exhibit-label text-[oklch(0.72_0.09_75)] mb-0.5">Recognition Result</p>
+            <p className="exhibit-label text-[oklch(0.72_0.09_75)] mb-0.5">识别结果</p>
           </div>
           <div className="w-6" />
         </div>
@@ -61,9 +63,9 @@ export default function ResultPage() {
       <div className="flex-1 px-5 py-6 space-y-8">
         {/* Primary artifact card */}
         <div className="animate-fade-up">
-          {/* Match confidence — fun detail */}
+          {/* Match confidence */}
           <div className="flex items-center justify-between mb-3">
-            <p className="exhibit-label text-[oklch(0.55_0.012_70)]">Best Match</p>
+            <p className="exhibit-label text-[oklch(0.55_0.012_70)]">最佳匹配</p>
             <div className="flex items-center gap-2">
               <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
@@ -81,7 +83,7 @@ export default function ResultPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-sm overflow-hidden shadow-sm border border-[oklch(0.88_0.01_75)]">
+          <div className="bg-white overflow-hidden shadow-sm border border-[oklch(0.88_0.01_75)]">
             {/* Artifact image */}
             <div className="relative h-[360px] bg-[oklch(0.93_0.008_75)] overflow-hidden">
               <img
@@ -89,9 +91,7 @@ export default function ResultPage() {
                 alt={selectedArtifact.name}
                 className="w-full h-full object-cover"
               />
-              {/* Gradient overlay at bottom */}
               <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white/60 to-transparent" />
-              {/* Catalog number */}
               <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm px-2.5 py-1">
                 <span className="exhibit-label text-[0.65rem] text-[oklch(0.45_0.01_65)]">
                   {selectedArtifact.catalogNumber}
@@ -114,19 +114,24 @@ export default function ResultPage() {
               <p className="font-body text-xs text-[oklch(0.55_0.012_70)]">
                 {selectedArtifact.location}
               </p>
-
               <p className="font-body text-sm text-[oklch(0.45_0.01_65)] mt-3 leading-relaxed">
                 {selectedArtifact.description}
               </p>
             </div>
 
-            {/* CTA */}
-            <div className="px-5 pb-5">
+            {/* CTA buttons — PRD v2: 就是这个 + 重新选择 */}
+            <div className="px-5 pb-5 flex flex-col gap-3">
               <button
-                onClick={() => setCurrentPage("conversation")}
-                className="w-full py-3.5 bg-[oklch(0.22_0.01_65)] text-white font-body font-medium text-sm tracking-widest uppercase hover:bg-[oklch(0.35_0.01_65)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                onClick={() => setCurrentPage("awaken")}
+                className="w-full py-3.5 bg-[oklch(0.22_0.01_65)] text-white font-body font-medium text-sm tracking-widest uppercase hover:bg-[oklch(0.35_0.01_65)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
               >
-                Start Conversation
+                ✦ 就是这个
+              </button>
+              <button
+                onClick={() => setCurrentPage("camera")}
+                className="w-full py-3 border border-[oklch(0.88_0.01_75)] text-[oklch(0.45_0.01_65)] font-body font-medium text-sm tracking-widest uppercase hover:border-[oklch(0.72_0.09_75)] hover:text-[oklch(0.22_0.01_65)] transition-all duration-200 active:scale-[0.98]"
+              >
+                重新选择
               </button>
             </div>
           </div>
@@ -136,7 +141,7 @@ export default function ResultPage() {
         <div className="animate-fade-up-delay-2">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-px w-4 bg-[oklch(0.72_0.09_75)]/40" />
-            <p className="exhibit-label text-[oklch(0.55_0.012_70)]">Not the one? Try these:</p>
+            <p className="exhibit-label text-[oklch(0.55_0.012_70)]">不是这个？试试这些：</p>
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-hide">
@@ -144,7 +149,7 @@ export default function ResultPage() {
               <button
                 key={artifact.id}
                 onClick={() => setSelectedArtifact(artifact)}
-                className="flex-shrink-0 w-[140px] bg-white rounded-sm overflow-hidden shadow-sm border border-[oklch(0.88_0.01_75)] hover:border-[oklch(0.72_0.09_75)] transition-all duration-200 hover:-translate-y-1 text-left"
+                className="flex-shrink-0 w-[140px] bg-white overflow-hidden shadow-sm border border-[oklch(0.88_0.01_75)] hover:border-[oklch(0.72_0.09_75)] transition-all duration-200 hover:-translate-y-1 text-left active:scale-[0.97]"
               >
                 <div className="h-[140px] overflow-hidden bg-[oklch(0.93_0.008_75)]">
                   <img
@@ -171,7 +176,7 @@ export default function ResultPage() {
         <div className="animate-fade-up-delay-3 pb-8">
           <div className="flex items-center gap-3 mb-3">
             <div className="h-px w-4 bg-[oklch(0.72_0.09_75)]/40" />
-            <p className="exhibit-label text-[oklch(0.55_0.012_70)]">Search the collection</p>
+            <p className="exhibit-label text-[oklch(0.55_0.012_70)]">搜索展品</p>
           </div>
 
           <div className="relative">
@@ -179,8 +184,8 @@ export default function ResultPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search artifact name..."
-              className="w-full px-4 py-3 bg-white border border-[oklch(0.88_0.01_75)] font-body text-sm text-[oklch(0.22_0.01_65)] placeholder-[oklch(0.7_0.008_70)] focus:outline-none focus:border-[oklch(0.72_0.09_75)] transition-colors rounded-sm"
+              placeholder="搜索展品名称…"
+              className="w-full px-4 py-3 bg-white border border-[oklch(0.88_0.01_75)] font-body text-sm text-[oklch(0.22_0.01_65)] placeholder-[oklch(0.7_0.008_70)] focus:outline-none focus:border-[oklch(0.72_0.09_75)] transition-colors"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
               {isSearching ? (
@@ -194,9 +199,8 @@ export default function ResultPage() {
             </div>
           </div>
 
-          {/* Search results */}
           {searchResults.length > 0 && (
-            <div className="mt-2 bg-white border border-[oklch(0.88_0.01_75)] rounded-sm overflow-hidden shadow-md">
+            <div className="mt-2 bg-white border border-[oklch(0.88_0.01_75)] overflow-hidden shadow-md">
               {searchResults.map((artifact, i) => (
                 <button
                   key={artifact.id}
@@ -208,7 +212,7 @@ export default function ResultPage() {
                     i > 0 ? "border-t border-[oklch(0.88_0.01_75)]" : ""
                   }`}
                 >
-                  <div className="w-10 h-10 rounded-sm overflow-hidden flex-shrink-0 bg-[oklch(0.93_0.008_75)]">
+                  <div className="w-10 h-10 overflow-hidden flex-shrink-0 bg-[oklch(0.93_0.008_75)]">
                     <img src={artifact.image} alt={artifact.name} className="w-full h-full object-cover" />
                   </div>
                   <div>
@@ -221,8 +225,8 @@ export default function ResultPage() {
           )}
 
           {searchQuery && searchResults.length === 0 && !isSearching && (
-            <div className="mt-2 px-4 py-3 bg-white border border-[oklch(0.88_0.01_75)] rounded-sm">
-              <p className="font-body text-sm text-[oklch(0.55_0.012_70)] text-center">No artifacts found</p>
+            <div className="mt-2 px-4 py-3 bg-white border border-[oklch(0.88_0.01_75)]">
+              <p className="font-body text-sm text-[oklch(0.55_0.012_70)] text-center">未找到相关展品</p>
             </div>
           )}
         </div>

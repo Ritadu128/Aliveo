@@ -10,6 +10,7 @@ import { AppProvider, useApp } from "./contexts/AppContext";
 import LandingPage from "./pages/LandingPage";
 import CameraPage from "./pages/CameraPage";
 import ResultPage from "./pages/ResultPage";
+import AwakenPage from "./pages/AwakenPage";
 import ConversationPage from "./pages/ConversationPage";
 
 function PageRouter() {
@@ -21,6 +22,8 @@ function PageRouter() {
       return <CameraPage />;
     case "result":
       return <ResultPage />;
+    case "awaken":
+      return <AwakenPage />;
     case "conversation":
       return <ConversationPage />;
     default:
